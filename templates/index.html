@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Advanced Notes App</title>
+
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>📝 Smart Notes Management System</h1>
+
+    <div class="form-box">
+
+        <input type="text"
+               id="titleInput"
+               placeholder="Enter Note Title">
+
+        <textarea id="noteInput"
+                  placeholder="Write your note here...">
+        </textarea>
+
+        <button onclick="addNote()">
+            Save Note
+        </button>
+
+    </div>
+
+    <div id="notesContainer"
+         class="notes-container">
+    </div>
+
+</div>
+
+<script>
+
+async function fetchNotes() {
+
+    const response =
+        await fetch('/get_notes');
+
+    const notes =
+        await response.json();
+
+    const container =
+        document.getElementById('notesContainer');
+
+    container.innerHTML = '';
+
+    notes.forEach(note => {
+
+        const importantClass =
+            note.important == 1
+            ? 'important'
+            : '';
+
+        container.innerHTML += `
+
+            <div class="note-card ${importantClass}">
+
+                <h2>${note.title}</h2>
+
+                <p>${note.content}</p>
+
+                <small>
+                    ${note.created_at}
+                </small>
+
+                <br><br>
+
+                <button onclick="editNote(
+                    ${note.id},
+                    '${note.title}',
+                    '${note.content}'
+                )">
+
+                    Edit
+
+                </button>
+
+                <button onclick="deleteNote(${note.id})">
+
+                    Delete
+
+                </button>
+
+                <button onclick="highlightNote(${note.id})">
+
+                    ⭐ Highlight
+
+                </button>
+
+            </div>
+
+        `;
+    });
+}
+
+async function addNote() {
+
+    const title =
+        document.getElementById('titleInput').value.trim();
+
+    const content =
+        document.getElementById('noteInput').value.trim();
+
+    if(title === '' || content === '') {
+
+        alert('Fill all fields');
+
+        return;
+    }
+
+    await fetch('/add_note', {
+
+        method: 'POST',
+
+        headers: {
+            'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+
+            title: title,
+            content: content
+
+        })
+
+    });
+
+    document.getElementById('titleInput').value = '';
+
+    document.getElementById('noteInput').value = '';
+
+    fetchNotes();
+}
+
+async function deleteNote(id) {
+
+    await fetch(`/delete_note/${id}`, {
+
+        method: 'DELETE'
+
+    });
+
+    fetchNotes();
+}
+
+async function editNote(id, oldTitle, oldContent) {
+
+    const newTitle =
+        prompt('Edit Title', oldTitle);
+
+    const newContent =
+        prompt('Edit Content', oldContent);
+
+    if(newTitle == null || newContent == null)
+        return;
+
+    await fetch(`/edit_note/${id}`, {
+
+        method: 'PUT',
+
+        headers: {
+            'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+
+            title: newTitle,
+            content: newContent
+
+        })
+
+    });
+
+    fetchNotes();
+}
+
+async function highlightNote(id) {
+
+    await fetch(`/highlight_note/${id}`, {
+
+        method: 'PUT'
+
+    });
+
+    fetchNotes();
+}
+
+fetchNotes();
+
+</script>
+
+</body>
+
+</html>
